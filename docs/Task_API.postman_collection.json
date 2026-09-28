@@ -1,0 +1,725 @@
+{
+	"info": {
+		"_postman_id": "task-api-collection",
+		"name": "Task API",
+		"description": "异步任务处理接口，支持翻译和摘要等 AI 任务类型。\n\nBase URL: /ai-api/v1\n\n鉴权：所有接口需要 Bearer Token，请在集合变量 bearer_token 中填入 token 值（对应 Apollo 配置 task_api.bearer_token）。\n\n使用方式：\n1. 在集合变量中设置 bearer_token\n2. 调用「创建任务」接口获取 task_id\n3. 用「获取任务」接口轮询状态，直到 status=4 (FINISH) 或 status=5 (ERROR)\n4. 批量查询可使用「批量获取任务」接口",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{bearer_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "bearer_token",
+			"value": "YOUR_BEARER_TOKEN",
+			"type": "string",
+			"description": "Bearer Token（对应 Apollo 配置 task_api.bearer_token，请勿提交真实 token）"
+		},
+		{
+			"key": "task_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "翻译任务",
+			"item": [
+				{
+					"name": "创建翻译任务 - 单语言",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    pm.test('返回 task_id', function () {",
+									"        pm.expect(jsonData.task_id).to.be.a('string').and.not.empty;",
+									"    });",
+									"    pm.test('status 为 INIT(0)', function () {",
+									"        pm.expect(jsonData.status).to.eql(0);",
+									"    });",
+									"    pm.test('返回 created_at', function () {",
+									"        pm.expect(jsonData.created_at).to.be.a('string').and.not.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"task_type\": 1,\n  \"model\": \"gemini-2.5-flash\",\n  \"user_group\": \"marketing\",\n  \"translation_params\": {\n    \"source_language\": \"en-US\",\n    \"target_languages\": [\"zh-CN\"],\n    \"content\": \"Hello, world! This is a test message for translation.\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task"]
+						},
+						"description": "创建单语言翻译任务（en-US → zh-CN）。\n\n创建成功后 task_id 会自动保存到集合变量，可直接用于后续查询。"
+					},
+					"response": []
+				},
+				{
+					"name": "创建翻译任务 - 多语言",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    pm.test('返回 task_id', function () {",
+									"        pm.expect(jsonData.task_id).to.be.a('string').and.not.empty;",
+									"    });",
+									"    pm.test('status 为 INIT(0)', function () {",
+									"        pm.expect(jsonData.status).to.eql(0);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"task_type\": 1,\n  \"model\": \"gemini-2.5-flash\",\n  \"user_group\": \"product\",\n  \"translation_params\": {\n    \"target_languages\": [\"zh-CN\", \"ko-KR\", \"ja-JP\"],\n    \"content\": \"Example is a premier global digital asset trading platform.\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task"]
+						},
+						"description": "创建多语言翻译任务（自动检测源语言 → zh-CN, ko-KR, ja-JP）。"
+					},
+					"response": []
+				},
+				{
+					"name": "创建翻译任务 - 自动检测源语言",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    pm.test('返回 task_id', function () {",
+									"        pm.expect(jsonData.task_id).to.be.a('string').and.not.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"task_type\": 1,\n  \"translation_params\": {\n    \"target_languages\": [\"en-US\", \"ja-JP\"],\n    \"content\": \"比特币是一种去中心化的数字货币，由中本聪在2009年创建。\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task"]
+						},
+						"description": "不指定 source_language，由 AI 自动检测源语言。"
+					},
+					"response": []
+				}
+			],
+			"description": "翻译任务相关接口"
+		},
+		{
+			"name": "摘要任务",
+			"item": [
+				{
+					"name": "创建摘要任务 - 简洁摘要",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    pm.test('返回 task_id', function () {",
+									"        pm.expect(jsonData.task_id).to.be.a('string').and.not.empty;",
+									"    });",
+									"    pm.test('status 为 INIT(0)', function () {",
+									"        pm.expect(jsonData.status).to.eql(0);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"task_type\": 2,\n  \"model\": \"gemini-2.5-flash\",\n  \"user_group\": \"research\",\n  \"summarization_params\": {\n    \"content\": \"Bitcoin, the world's first cryptocurrency, was created in 2009 by an anonymous person or group known as Satoshi Nakamoto. It operates on a decentralized network using blockchain technology, which ensures transparency and security. Bitcoin has a limited supply of 21 million coins, making it a deflationary asset. Over the years, it has gained widespread adoption as both a store of value and a medium of exchange.\",\n    \"target_language\": \"zh-CN\",\n    \"max_length\": 150,\n    \"style\": \"concise\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task"]
+						},
+						"description": "创建简洁风格的摘要任务，输出中文摘要，限制 150 字符。"
+					},
+					"response": []
+				},
+				{
+					"name": "创建摘要任务 - 详细摘要",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    pm.test('返回 task_id', function () {",
+									"        pm.expect(jsonData.task_id).to.be.a('string').and.not.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"task_type\": 2,\n  \"summarization_params\": {\n    \"content\": \"Ethereum is a decentralized, open-source blockchain system that features smart contract functionality. Ether is the native cryptocurrency of the platform. Amongst cryptocurrencies, ether is second only to bitcoin in market capitalization. Ethereum was conceived in 2013 by programmer Vitalik Buterin. Additional founders of Ethereum included Gavin Wood, Charles Hoskinson, Anthony Di Iorio, and Joseph Lubin. Development work began in early 2014 and the network went live on July 30, 2015.\",\n    \"target_language\": \"en-US\",\n    \"max_length\": 300,\n    \"style\": \"detailed\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task"]
+						},
+						"description": "创建详细风格的摘要任务。"
+					},
+					"response": []
+				},
+				{
+					"name": "创建摘要任务 - 要点摘要",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    pm.test('返回 task_id', function () {",
+									"        pm.expect(jsonData.task_id).to.be.a('string').and.not.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"task_type\": 2,\n  \"summarization_params\": {\n    \"content\": \"长篇文章内容...\",\n    \"style\": \"bullet_points\",\n    \"max_length\": 300\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task"]
+						},
+						"description": "创建要点列表风格的摘要任务。"
+					},
+					"response": []
+				}
+			],
+			"description": "摘要任务相关接口"
+		},
+		{
+			"name": "查询任务",
+			"item": [
+				{
+					"name": "获取任务状态",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.test('返回 task_id', function () {",
+									"        pm.expect(jsonData.task_id).to.be.a('string').and.not.empty;",
+									"    });",
+									"    pm.test('返回 task_type', function () {",
+									"        pm.expect(jsonData.task_type).to.be.oneOf([1, 2]);",
+									"    });",
+									"    pm.test('返回有效 status', function () {",
+									"        pm.expect(jsonData.status).to.be.oneOf([0, 1, 2, 3, 4, 5]);",
+									"    });",
+									"    pm.test('返回 model', function () {",
+									"        pm.expect(jsonData.model).to.be.a('string').and.not.empty;",
+									"    });",
+									"    pm.test('返回 created_at', function () {",
+									"        pm.expect(jsonData.created_at).to.be.a('string').and.not.empty;",
+									"    });",
+									"    // 完成的翻译任务应有 translation_output",
+									"    if (jsonData.status === 4 && jsonData.task_type === 1) {",
+									"        pm.test('翻译完成: 返回 translation_output', function () {",
+									"            pm.expect(jsonData.translation_output).to.be.an('object');",
+									"            pm.expect(jsonData.translation_output.translations).to.be.an('object');",
+									"        });",
+									"    }",
+									"    // 完成的摘要任务应有 summarization_output",
+									"    if (jsonData.status === 4 && jsonData.task_type === 2) {",
+									"        pm.test('摘要完成: 返回 summarization_output', function () {",
+									"            pm.expect(jsonData.summarization_output).to.be.an('object');",
+									"            pm.expect(jsonData.summarization_output.summary).to.be.a('string');",
+									"        });",
+									"    }",
+									"    // 失败的任务应有 error_message",
+									"    if (jsonData.status === 5) {",
+									"        pm.test('失败: 返回 error_message', function () {",
+									"            pm.expect(jsonData.error_message).to.be.a('string').and.not.empty;",
+									"        });",
+									"    }",
+									"} else if (pm.response.code === 404) {",
+									"    pm.test('任务不存在返回 404', function () {",
+									"        pm.expect(pm.response.code).to.eql(404);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task/{{task_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task", "{{task_id}}"]
+						},
+						"description": "根据 task_id 获取任务详情。\n\n使用集合变量 {{task_id}}，由创建任务接口自动设置。\n\n状态枚举：\n- 0: INIT\n- 1: BEFORE_PROCESS\n- 2: PROCESSING\n- 3: AFTER_PROCESS\n- 4: FINISH\n- 5: ERROR"
+					},
+					"response": []
+				},
+				{
+					"name": "获取任务 - 不存在的 ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('返回 404', function () {",
+									"    pm.expect(pm.response.code).to.eql(404);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task/00000000-0000-0000-0000-000000000000",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task", "00000000-0000-0000-0000-000000000000"]
+						},
+						"description": "使用不存在的 task_id 查询，预期返回 404。"
+					},
+					"response": []
+				},
+				{
+					"name": "批量获取任务",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.test('返回 tasks 数组', function () {",
+									"        pm.expect(jsonData.tasks).to.be.an('array');",
+									"    });",
+									"    // 验证每个 task 都有必要字段",
+									"    if (jsonData.tasks.length > 0) {",
+									"        pm.test('每个 task 包含必要字段', function () {",
+									"            jsonData.tasks.forEach(function (task) {",
+									"                pm.expect(task.task_id).to.be.a('string');",
+									"                pm.expect(task.task_type).to.be.oneOf([1, 2]);",
+									"                pm.expect(task.status).to.be.oneOf([0, 1, 2, 3, 4, 5]);",
+									"                pm.expect(task.model).to.be.a('string');",
+									"            });",
+									"        });",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"task_ids\": [\n    \"{{task_id}}\"\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task/batch",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task", "batch"]
+						},
+						"description": "批量获取任务。使用集合变量 {{task_id}}。\n\n注意：\n- 最多支持 100 个 task_id\n- 不存在的 ID 会被忽略\n- 结果按请求顺序返回"
+					},
+					"response": []
+				},
+				{
+					"name": "批量获取任务 - 多个 ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.test('返回 tasks 数组', function () {",
+									"        pm.expect(jsonData.tasks).to.be.an('array');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"task_ids\": [\n    \"550e8400-e29b-41d4-a716-446655440000\",\n    \"660e8400-e29b-41d4-a716-446655440001\",\n    \"770e8400-e29b-41d4-a716-446655440002\"\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task/batch",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task", "batch"]
+						},
+						"description": "批量获取多个任务（示例 ID，可替换为实际值）。"
+					},
+					"response": []
+				}
+			],
+			"description": "任务查询相关接口"
+		},
+		{
+			"name": "异常场景",
+			"item": [
+				{
+					"name": "创建任务 - 无 Bearer Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('返回 401', function () {",
+									"    pm.expect(pm.response.code).to.eql(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"task_type\": 1,\n  \"translation_params\": {\n    \"target_languages\": [\"zh-CN\"],\n    \"content\": \"Hello\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task"]
+						},
+						"description": "不携带 Authorization 头，预期返回 401（需要服务端已配置 task_api.bearer_token）。"
+					},
+					"response": []
+				},
+				{
+					"name": "创建任务 - 错误的 Bearer Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('返回 401', function () {",
+									"    pm.expect(pm.response.code).to.eql(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "wrong-token-value",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"task_type\": 1,\n  \"translation_params\": {\n    \"target_languages\": [\"zh-CN\"],\n    \"content\": \"Hello\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task"]
+						},
+						"description": "携带错误的 Bearer Token，预期返回 401（需要服务端已配置 task_api.bearer_token）。"
+					},
+					"response": []
+				},
+				{
+					"name": "创建任务 - 无效 task_type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('返回 400', function () {",
+									"    pm.expect(pm.response.code).to.eql(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"task_type\": 99,\n  \"translation_params\": {\n    \"target_languages\": [\"zh-CN\"],\n    \"content\": \"test\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task"]
+						},
+						"description": "使用无效的 task_type，预期返回 400。"
+					},
+					"response": []
+				},
+				{
+					"name": "创建翻译任务 - 缺少 translation_params",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('返回 400', function () {",
+									"    pm.expect(pm.response.code).to.eql(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"task_type\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task"]
+						},
+						"description": "task_type=1 但未提供 translation_params，预期返回 400。"
+					},
+					"response": []
+				},
+				{
+					"name": "创建摘要任务 - 缺少 summarization_params",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('返回 400', function () {",
+									"    pm.expect(pm.response.code).to.eql(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"task_type\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task"]
+						},
+						"description": "task_type=2 但未提供 summarization_params，预期返回 400。"
+					},
+					"response": []
+				},
+				{
+					"name": "创建翻译任务 - 不支持的语言",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('返回 400', function () {",
+									"    pm.expect(pm.response.code).to.eql(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"task_type\": 1,\n  \"translation_params\": {\n    \"target_languages\": [\"xx-XX\"],\n    \"content\": \"Hello\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ai-api/v1/task",
+							"host": ["{{base_url}}"],
+							"path": ["ai-api", "v1", "task"]
+						},
+						"description": "使用不支持的语言代码 xx-XX，预期返回 400。"
+					},
+					"response": []
+				}
+			],
+			"description": "错误和边界场景测试"
+		}
+	]
+}

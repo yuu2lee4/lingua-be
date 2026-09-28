@@ -1,0 +1,2 @@
+data/binance_glossary/binance_glossary_clean.json filter=lfs diff=lfs merge=lfs -text
+data/binance_glossary/binance_glossary.json filter=lfs diff=lfs merge=lfs -text
